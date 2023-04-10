@@ -1,4 +1,4 @@
-from sqlalchemy import select, delete, update
+from sqlalchemy import and_, select, delete, update
 from sqlalchemy.exc import NoResultFound, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
@@ -11,15 +11,21 @@ from tasks.worker import send_email_code
 
 async def create(request: UserCreate, db: AsyncSession):
     new_user = User(
-        email=request.email, password=bcrypt_password(request.password))
+        email=request.email, password=bcrypt_password(request.password)
+    )
     try:
-        db.add(new_user)
-        await db.commit()
-        await db.refresh(new_user)
-    except IntegrityError:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail=f"Email {request.email} is already used!")
-    await create_user_code(new_user, db)
+        user = await get_by_email(request.email, db)
+        if user.is_registered == False:
+            await create_user_code(new_user, db)
+    except HTTPException:
+        try:
+            db.add(new_user)
+            await db.commit()
+            await db.refresh(new_user)
+        except IntegrityError:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                detail=f"Email {request.email} is already used!")
+        await create_user_code(new_user, db)
 
 
 async def get_by_id(id: int, db: AsyncSession):
@@ -47,7 +53,7 @@ async def get_code_by_user_id(id: int, db: AsyncSession):
     code = await db.get(entity=UserCode, ident=id)
     if not code:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Your account already confirm")
+                            detail=f"Your Account already confirmed")
     return code.code
 
 
@@ -73,20 +79,32 @@ async def update_user_token(refresh_token: str, id: int, db: AsyncSession):
 
 
 async def delete_user_code(id: int, code: str, db: AsyncSession):
-    query = (
-        delete(UserCode).
-        where(UserCode.user_id == id and UserCode.code == code).
-        returning(UserCode.user_id)
-    )
-    res = (await db.execute(query)).scalars().one()
-    return res
+    try:
+        query = (
+            delete(UserCode).
+            where(and_(UserCode.user_id == id, UserCode.code == code)).
+            returning(UserCode.user_id)
+        )
+        res = (await db.execute(query)).scalars().one()
+        await db.commit()
+        return res
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                            detail=f"Invalid code")
+
 
 async def create_user_code(user: User, db: AsyncSession):
-    new_user_code = UserCode(user_id=user.user_id, code=generate_user_code())
+    query = (
+        delete(UserCode).
+        where(UserCode.user_id == user.user_id)
+    )
+    await db.execute(query)
+    new_user_code = UserCode(user_id=user.user_id,
+                             code=generate_user_code())
     db.add(new_user_code)
     await db.commit()
     send_email_code.delay(user.email, new_user_code.code)
-    
+
 
 async def reset_user_password(request: UserUpdate, db: AsyncSession):
     user = await get_by_email(request.email, db)
@@ -98,5 +116,3 @@ async def reset_user_password(request: UserUpdate, db: AsyncSession):
     )
     await db.execute(query)
     await db.commit()
-    
-    

@@ -45,7 +45,7 @@ async def confirm_user(code: str, db: AsyncSession = Depends(get_async_session),
                        current_user: UserAuth = Depends(get_current_user)):
     user_code = await user_rep.get_code_by_user_id(current_user.user_id, db)
     if user_code != code:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail=f"Invalid code")
     else:
         await user_rep.confirm_user_register(current_user.user_id, user_code, db)

@@ -3,10 +3,9 @@ from contextlib import asynccontextmanager
 from sqlalchemy import delete, func, extract, and_
 from sqlalchemy.ext.asyncio import async_scoped_session
 from models.user import User, UserCode
-from repository import special, async_session_maker
+from repository import async_session_maker
 from celery.schedules import crontab
 from tasks import beat
-from celery import shared_task
 
 
 loop = get_event_loop()
@@ -15,7 +14,7 @@ loop = get_event_loop()
 beat.conf.beat_schedule = {
     'add-every-monday-morning': {
         'task': 'tasks.beat.clear_db_from_not_registered_users',
-        'schedule': crontab(minute='*/1'),
+        'schedule': crontab(minute='*/5'),
         'args': None,
     },
 }
@@ -59,6 +58,6 @@ async def delete_unregistered_users():
         await db.commit()
 
 
-@shared_task()
+@beat.task(queue='beat')
 def clear_db_from_not_registered_users():
     loop.run_until_complete(delete_unregistered_users())
