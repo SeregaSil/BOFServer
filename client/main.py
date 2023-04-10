@@ -2,7 +2,7 @@ import requests
 from testdata import BUILDINGS
 import json
 
-URL = 'http://localhost:8000'
+
 
 
 # class BOFError(Exception):

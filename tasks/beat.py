@@ -1,25 +1,16 @@
 from asyncio import current_task, get_event_loop
 from contextlib import asynccontextmanager
-import datetime
 from sqlalchemy import delete, func, extract, and_
 from sqlalchemy.ext.asyncio import async_scoped_session
 from models.user import User, UserCode
-from repository import special
+from repository import special, async_session_maker
 from celery.schedules import crontab
-from asgiref.sync import async_to_sync
 from tasks import beat
-from fastapi import Depends
+from celery import shared_task
 
-# @beat.on_after_configure.connect
-# def setup_periodic_tasks(sender, **kwargs):
-#     sender.add_periodic_task(
-#         crontab(),
-#         clear_db_from_not_registered_users(),
-#     )
 
 loop = get_event_loop()
 
-beat.conf.task_default_queue = 'clear'
 
 beat.conf.beat_schedule = {
     'add-every-monday-morning': {
@@ -31,10 +22,11 @@ beat.conf.beat_schedule = {
 
 beat.conf.timezone = 'UTC'
 
+
 @asynccontextmanager
 async def scoped_session():
     scoped_factory = async_scoped_session(
-        special,
+        async_session_maker,
         scopefunc=current_task,
     )
     try:
@@ -49,11 +41,11 @@ async def delete_unregistered_users():
         query = (
             delete(UserCode).
             where(func.trunc((
-                extract('epoch', UserCode.created_at) - 
+                extract('epoch', UserCode.created_at) -
                 extract('epoch', func.now())
-                ) / (60 * 60 * 24)) + 12 > 0).
+            ) / (60 * 60 * 24)) + 12 > 0).
             returning(UserCode.user_id)
-        ) 
+        )
 
         res = (await db.execute(query)).scalars().all()
         if res is None:
@@ -66,8 +58,7 @@ async def delete_unregistered_users():
         await db.execute(query)
         await db.commit()
 
-    
 
-@beat.task()
+@shared_task()
 def clear_db_from_not_registered_users():
     loop.run_until_complete(delete_unregistered_users())

@@ -1,0 +1,9 @@
+fastapi[all]
+python-jose
+SQLAlchemy
+celery
+celery[redis]
+flower
+passlib
+asyncpg
+psycopg2-binary

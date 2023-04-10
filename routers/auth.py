@@ -60,7 +60,7 @@ async def code_reset_user_password(user: UserBase, db: AsyncSession = Depends(ge
                       detail='Reset code sent')
 
 
-@router.post('/reset')
+@router.post('/reset', response_model=BOFRequest)
 async def reset_password(user: UserUpdate, db: AsyncSession = Depends(get_async_session)):
     await reset_user_password(user, db)
     return BOFRequest(status=status.HTTP_200_OK,

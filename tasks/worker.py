@@ -1,12 +1,9 @@
-from contextlib import asynccontextmanager
 import smtplib
 from email.message import EmailMessage
 
 from core.config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD
-from tasks import worker
+from celery import shared_task
 
-
-worker.conf.task_default_queue = 'standart'
 
 def get_email_send_code(email: str, code: str):
     email_message = EmailMessage()
@@ -17,9 +14,7 @@ def get_email_send_code(email: str, code: str):
     return email_message
 
 
-
-
-@worker.task()
+@shared_task()
 def send_email_code(email: str, code: str):
     email_message = get_email_send_code(email, code)
     with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
