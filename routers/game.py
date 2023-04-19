@@ -38,7 +38,7 @@ async def put_game(game: GameInfo, game_id: int, db: AsyncSession = Depends(get_
 async def get_all_games_info(db: AsyncSession = Depends(get_async_session),
                         current_user: UserAuth = Depends(get_current_user)):
     games = await get_all_games_by_userId(current_user.user_id, db)
-    response = []
+    response: List[GameIdent] = []
     for i in games:
-        response.append(**i.__dict__)
+        response.append(GameIdent(game_id=i.game_id, game_name=i.game_name))
     return response

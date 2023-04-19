@@ -31,7 +31,7 @@ def decode_access_token(token, exception):
             raise exception
         return email
     except ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+        raise HTTPException(status_code=status.HTTP_426_UPGRADE_REQUIRED,
                             detail='Token expired! Please update token!')
     except JWTError:
         raise exception

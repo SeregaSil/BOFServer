@@ -4,6 +4,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from core import jwtoken
 from repository import user_rep, get_async_session
+from repository.game_rep import create_game
+from schemas.game import GameCreate
 from schemas.token import Token
 from schemas.user import UserBase, UserCreate, UserAuth, UserUpdate
 from schemas import BOFRequest
@@ -33,17 +35,23 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_async_ses
                       detail='User created')
 
 
-@router.post('/refresh', response_model=Token)
+@router.get('/refresh', response_model=Token)
 async def refresh_tokens(current_user: UserAuth = Depends(get_current_user_by_refresh), db: AsyncSession = Depends(get_async_session)):
     new_tokens = jwtoken.get_all_tokens(data={"email": current_user.email})
     await update_user_token(new_tokens['refresh_token'], current_user.user_id, db)
-    return {"access_token": new_tokens['access_token'], "refresh_token": new_tokens['refresh_token'], "token_type": "bearer"}
+    return {"access_token": new_tokens['access_token'], 
+            "refresh_token": new_tokens['refresh_token'], 
+            "token_type": "bearer"
+            }
 
 
 @router.post('/confirm', response_model=BOFRequest)
 async def confirm_user(code: str, db: AsyncSession = Depends(get_async_session),
                        current_user: UserAuth = Depends(get_current_user)):
     user_code = await user_rep.get_code_by_user_id(current_user.user_id, db)
+    for i in range(1, 4):
+        game = GameCreate(game_id=i, game_name=f'Empty')
+        await create_game(game, current_user.user_id, db)
     if user_code != code:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail=f"Invalid code")

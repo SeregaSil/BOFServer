@@ -6,9 +6,10 @@ class GameIdent(BaseModel):
 
 
 class GameInfo(BaseModel):
+    game_name: str
     army: dict | None = None
     resources: dict | None = None
-    houses: dict | None = None
+    houses: list | None = None
 
 class GameCreate(GameInfo, GameIdent):
     pass
