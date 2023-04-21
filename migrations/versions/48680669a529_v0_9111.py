@@ -1,8 +1,8 @@
-"""0.0.1
+"""v0.9111
 
-Revision ID: f0b58bbae806
+Revision ID: 48680669a529
 Revises: 
-Create Date: 2023-04-09 21:32:51.786227
+Create Date: 2023-04-21 14:41:32.301277
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'f0b58bbae806'
+revision = '48680669a529'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -34,7 +34,7 @@ def upgrade() -> None:
     sa.Column('resources', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('army', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('house', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['user.user_id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['user.user_id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('game_id', 'user_id')
     )
     op.create_table('user_code',

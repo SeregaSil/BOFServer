@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
 from schemas.user import UserCreate, UserUpdate
-from models.user import User, UserCode
+from models import User, UserCode
 from core.security import bcrypt_password, generate_user_code
 from tasks.worker import send_email_code
 

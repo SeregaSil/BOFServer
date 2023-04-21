@@ -3,7 +3,7 @@ from sqlalchemy import update, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from models.game import Game
+from models import Game
 from schemas.game import GameCreate, GameInfo
 
 

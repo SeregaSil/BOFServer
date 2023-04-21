@@ -1,7 +1,8 @@
 from sqlalchemy import (Column, Integer, String, 
                         Boolean, ForeignKey, DateTime)
+from sqlalchemy.orm import relationship
 
-from models import Base
+from repository import Base
 from sqlalchemy.sql import func
 
 class User(Base):
@@ -12,6 +13,12 @@ class User(Base):
     password = Column('password', String, nullable=False)
     token = Column('token', String)
     is_registered = Column('is_registered', Boolean, default=False)
+    games = relationship(
+        'Game',
+        back_populates='user',
+        cascade='save-update, merge, delete',
+        passive_deletes=True,
+    )
     
 
 class UserCode(Base):
